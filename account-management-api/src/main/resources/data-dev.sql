@@ -56,3 +56,8 @@ values
     (18, 'VND', 'SEK', 0.00041481, current_timestamp, current_timestamp),
     (19, 'GBP', 'VND', 31395.34883721, current_timestamp, current_timestamp),
     (20, 'VND', 'GBP', 0.00003185, current_timestamp, current_timestamp);
+
+alter table users alter column id restart with 2;
+alter table accounts alter column id restart with 6;
+alter table transactions alter column id restart with 10;
+alter table exchange_rates alter column id restart with 21;

@@ -1,0 +1,39 @@
+# macOS
+.DS_Store
+
+# IDEs and editors
+.idea/
+.vscode/
+*.iml
+*.iws
+*.ipr
+
+# Logs and runtime files
+*.log
+logs/
+*.pid
+
+# Environment and local config
+.env
+.env.*
+!.env.example
+!.env.sample
+application-local.*
+
+# Java and Maven
+target/
+build/
+.gradle/
+
+# Node and frontend tooling
+node_modules/
+dist/
+coverage/
+.next/
+.vite/
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
