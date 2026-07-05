@@ -1,0 +1,14 @@
+<header class="border-bottom bg-white">
+  <nav class="navbar navbar-expand container py-3">
+    <a class="navbar-brand fw-semibold" routerLink="/">Account Management</a>
+    <div class="navbar-nav">
+      <a class="nav-link" routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+        Accounts
+      </a>
+    </div>
+  </nav>
+</header>
+
+<main class="container py-4">
+  <router-outlet />
+</main>

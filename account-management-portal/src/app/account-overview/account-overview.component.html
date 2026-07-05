@@ -1,0 +1,174 @@
+<a routerLink="/" class="btn btn-link px-0 mb-3">Back to accounts</a>
+
+@if (isLoading()) {
+  <div class="alert alert-info">Loading account...</div>
+} @else if (account(); as selectedAccount) {
+  <section class="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-4">
+    <div>
+      <h1 class="h3 mb-1">{{ selectedAccount.accountNumber }}</h1>
+      <p class="text-secondary mb-0">Account overview</p>
+    </div>
+    <div class="text-end">
+      <div class="display-balance">{{ money(selectedAccount.balance, selectedAccount.currency) }}</div>
+      <span class="badge text-bg-primary">{{ selectedAccount.currency }}</span>
+    </div>
+  </section>
+
+  @if (error()) {
+    <div class="alert alert-danger">{{ error() }}</div>
+  }
+  @if (success()) {
+    <div class="alert alert-success">{{ success() }}</div>
+  }
+
+  <div class="row g-4 mb-4">
+    <div class="col-12 col-xl-7">
+      <section class="panel h-100">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <h2 class="h5 mb-0">Balance history</h2>
+          <span class="text-secondary small">{{ history().length }} points</span>
+        </div>
+
+        @if (chartPolyline()) {
+          <div class="chart-wrap">
+            <svg viewBox="0 0 640 220" role="img" aria-label="Historic account balance line chart">
+              <line x1="24" y1="192" x2="616" y2="192" class="axis" />
+              <line x1="24" y1="18" x2="24" y2="192" class="axis" />
+              <polyline [attr.points]="chartPolyline()" class="balance-line" />
+              <text x="34" y="32" class="chart-label">{{ chartMaxLabel() }}</text>
+              <text x="34" y="186" class="chart-label">{{ chartMinLabel() }}</text>
+            </svg>
+          </div>
+        } @else {
+          <div class="empty-state">No balance history yet.</div>
+        }
+      </section>
+    </div>
+
+    <div class="col-12 col-xl-5">
+      <section class="panel h-100">
+        <h2 class="h5 mb-3">Account actions</h2>
+
+        <form class="row g-2 mb-4" (ngSubmit)="submitMovement()">
+          <div class="col-12 col-sm-4">
+            <label class="form-label" for="movementAction">Action</label>
+            <select id="movementAction" class="form-select" name="movementAction" [(ngModel)]="movementAction">
+              <option value="deposit">Deposit</option>
+              <option value="debit">Debit</option>
+            </select>
+          </div>
+          <div class="col-12 col-sm-4">
+            <label class="form-label" for="movementAmount">Amount</label>
+            <input
+              id="movementAmount"
+              class="form-control"
+              type="number"
+              min="0.01"
+              step="0.01"
+              name="movementAmount"
+              [(ngModel)]="movementAmount"
+              required
+            />
+          </div>
+          <div class="col-12 col-sm-4 d-flex align-items-end">
+            <button class="btn btn-primary w-100" type="submit" [disabled]="isSubmitting()">Submit</button>
+          </div>
+          <div class="col-12">
+            <label class="form-label" for="movementDescription">Description</label>
+            <input
+              id="movementDescription"
+              class="form-control"
+              name="movementDescription"
+              [(ngModel)]="movementDescription"
+              placeholder="Optional"
+            />
+          </div>
+        </form>
+
+        <form class="row g-2" (ngSubmit)="submitExchange()">
+          <div class="col-12 col-sm-5">
+            <label class="form-label" for="exchangeTo">Exchange to</label>
+            <select id="exchangeTo" class="form-select" name="exchangeToAccountId" [(ngModel)]="exchangeToAccountId">
+              @for (target of accounts(); track target.id) {
+                @if (target.id !== selectedAccount.id) {
+                  <option [ngValue]="target.id">{{ target.accountNumber }} ({{ target.currency }})</option>
+                }
+              }
+            </select>
+          </div>
+          <div class="col-12 col-sm-4">
+            <label class="form-label" for="exchangeAmount">Amount</label>
+            <input
+              id="exchangeAmount"
+              class="form-control"
+              type="number"
+              min="0.01"
+              step="0.01"
+              name="exchangeAmount"
+              [(ngModel)]="exchangeAmount"
+              required
+            />
+          </div>
+          <div class="col-12 col-sm-3 d-flex align-items-end">
+            <button class="btn btn-outline-primary w-100" type="submit" [disabled]="isSubmitting() || !exchangeToAccountId">
+              Exchange
+            </button>
+          </div>
+          <div class="col-12">
+            <label class="form-label" for="exchangeDescription">Description</label>
+            <input
+              id="exchangeDescription"
+              class="form-control"
+              name="exchangeDescription"
+              [(ngModel)]="exchangeDescription"
+              placeholder="Optional"
+            />
+          </div>
+        </form>
+      </section>
+    </div>
+  </div>
+
+  <section class="panel">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+      <h2 class="h5 mb-0">Transaction history</h2>
+      <span class="text-secondary small">{{ transactions().length }} loaded</span>
+    </div>
+
+    @if (!transactions().length && isLoadingMore()) {
+      <div class="alert alert-info">Loading transactions...</div>
+    } @else if (!transactions().length) {
+      <div class="empty-state">No transactions yet.</div>
+    } @else {
+      <div class="list-group transaction-list">
+        @for (transaction of transactions(); track transaction.id) {
+          <a class="list-group-item list-group-item-action" [routerLink]="['/transactions', transaction.id]">
+            <div class="d-flex flex-wrap justify-content-between gap-2">
+              <div>
+                <div class="fw-semibold">{{ transactionLabel(transaction.type) }}</div>
+                <div class="text-secondary small">{{ dateTime(transaction.createdAt) }}</div>
+                @if (transaction.description) {
+                  <div class="text-secondary small">{{ transaction.description }}</div>
+                }
+              </div>
+              <div class="text-end">
+                <div class="fw-semibold">{{ money(transaction.amount, transaction.currency) }}</div>
+                <div class="text-secondary small">Balance {{ money(transaction.balanceAfter, transaction.currency) }}</div>
+              </div>
+            </div>
+          </a>
+        }
+      </div>
+
+      @if (hasMore()) {
+        <div #loadMoreAnchor class="py-3 text-center">
+          <button class="btn btn-outline-secondary" type="button" (click)="loadMoreTransactions()" [disabled]="isLoadingMore()">
+            {{ isLoadingMore() ? 'Loading...' : 'Load more' }}
+          </button>
+        </div>
+      }
+    }
+  </section>
+} @else {
+  <div class="alert alert-danger">Account was not found.</div>
+}

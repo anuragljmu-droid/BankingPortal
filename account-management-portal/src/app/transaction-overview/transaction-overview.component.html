@@ -1,0 +1,59 @@
+@if (transaction(); as selectedTransaction) {
+  <a [routerLink]="['/accounts', selectedTransaction.accountId]" class="btn btn-link px-0 mb-3">Back to account</a>
+} @else {
+  <a routerLink="/" class="btn btn-link px-0 mb-3">Back to accounts</a>
+}
+
+@if (isLoading()) {
+  <div class="alert alert-info">Loading transaction...</div>
+} @else if (error()) {
+  <div class="alert alert-danger">{{ error() }}</div>
+} @else if (transaction(); as selectedTransaction) {
+  <section class="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-4">
+    <div>
+      <h1 class="h3 mb-1">Transaction {{ selectedTransaction.reference }}</h1>
+      <p class="text-secondary mb-0">{{ dateTime(selectedTransaction.createdAt) }}</p>
+    </div>
+    <button class="btn btn-primary" type="button" (click)="exportPdf()" [disabled]="isExporting()">
+      {{ isExporting() ? 'Preparing PDF...' : 'Download PDF' }}
+    </button>
+  </section>
+
+  <section class="panel">
+    <dl class="row mb-0">
+      <dt class="col-sm-4 col-lg-3">Status</dt>
+      <dd class="col-sm-8 col-lg-9">
+        <span class="badge" [class.text-bg-success]="selectedTransaction.status === 'SUCCESS'" [class.text-bg-danger]="selectedTransaction.status !== 'SUCCESS'">
+          {{ selectedTransaction.status }}
+        </span>
+      </dd>
+
+      <dt class="col-sm-4 col-lg-3">Type</dt>
+      <dd class="col-sm-8 col-lg-9">{{ transactionLabel(selectedTransaction.type) }}</dd>
+
+      <dt class="col-sm-4 col-lg-3">Amount</dt>
+      <dd class="col-sm-8 col-lg-9 fw-semibold">
+        {{ money(selectedTransaction.amount, selectedTransaction.currency) }}
+      </dd>
+
+      <dt class="col-sm-4 col-lg-3">Balance after</dt>
+      <dd class="col-sm-8 col-lg-9">
+        {{ money(selectedTransaction.balanceAfter, selectedTransaction.currency) }}
+      </dd>
+
+      <dt class="col-sm-4 col-lg-3">Account ID</dt>
+      <dd class="col-sm-8 col-lg-9">{{ selectedTransaction.accountId }}</dd>
+
+      <dt class="col-sm-4 col-lg-3">Account version after</dt>
+      <dd class="col-sm-8 col-lg-9">{{ selectedTransaction.accountVersionAfter }}</dd>
+
+      <dt class="col-sm-4 col-lg-3">Description</dt>
+      <dd class="col-sm-8 col-lg-9">{{ selectedTransaction.description || 'None' }}</dd>
+
+      <dt class="col-sm-4 col-lg-3">Related transaction</dt>
+      <dd class="col-sm-8 col-lg-9">{{ selectedTransaction.relatedTransactionId || 'None' }}</dd>
+    </dl>
+  </section>
+} @else {
+  <div class="alert alert-danger">Transaction was not found.</div>
+}

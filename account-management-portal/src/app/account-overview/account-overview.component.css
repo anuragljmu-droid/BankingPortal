@@ -1,0 +1,33 @@
+.chart-wrap {
+  overflow-x: auto;
+}
+
+svg {
+  display: block;
+  min-width: 520px;
+  width: 100%;
+  height: auto;
+}
+
+.axis {
+  stroke: #ccd5df;
+  stroke-width: 1;
+}
+
+.balance-line {
+  fill: none;
+  stroke: #0d6efd;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 4;
+}
+
+.chart-label {
+  fill: #526170;
+  font-size: 13px;
+}
+
+.transaction-list {
+  max-height: 560px;
+  overflow-y: auto;
+}
