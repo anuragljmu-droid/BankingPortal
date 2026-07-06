@@ -1,5 +1,6 @@
 package com.banking_portal.account_management_api.account;
 
+import com.banking_portal.account_management_api.common.TransactionType;
 import com.banking_portal.account_management_api.dto.AccountResponse;
 import com.banking_portal.account_management_api.dto.BalanceHistoryResponse;
 import com.banking_portal.account_management_api.dto.BalanceResponse;
@@ -55,13 +56,12 @@ public class AccountController {
     @PostMapping("/{accountId}")
     public TransactionResponse moveMoney(
             @PathVariable Long accountId,
-            @RequestParam String action,
+            @RequestParam TransactionType action,
             @Valid @RequestBody MoneyMovementRequest request
     ) {
-        return switch (action.toLowerCase()) {
-            case "deposit" -> transactionService.deposit(accountId, request);
-            case "debit" -> transactionService.debit(accountId, request);
-            default -> throw new BadRequestException("Unsupported account action");
+        return switch (action) {
+            case TransactionType.DEPOSIT-> transactionService.deposit(accountId, request);
+            case TransactionType.DEBIT -> transactionService.debit(accountId, request);
         };
     }
 

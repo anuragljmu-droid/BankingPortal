@@ -1,5 +1,10 @@
 server:
   port: 8081
+
+banking:
+  external-logging:
+    url: https://jsonplaceholder.typicode.com/posts
+
 spring:
   h2:
     console:
