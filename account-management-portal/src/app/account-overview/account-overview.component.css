@@ -26,8 +26,3 @@ svg {
   fill: #526170;
   font-size: 13px;
 }
-
-.transaction-list {
-  max-height: 560px;
-  overflow-y: auto;
-}

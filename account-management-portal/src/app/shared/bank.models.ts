@@ -1,6 +1,8 @@
 export type CurrencyCode = 'EUR' | 'USD' | 'SEK' | 'GBP' | 'VND';
 
-export type TransactionType = 'DEPOSIT' | 'DEBIT' | 'EXCHANGE_IN' | 'EXCHANGE_OUT';
+export type MoneyMovementAction = 'DEPOSIT' | 'DEBIT';
+
+export type TransactionType = MoneyMovementAction | 'EXCHANGE_IN' | 'EXCHANGE_OUT' | string;
 
 export type TransactionStatus = 'SUCCESS' | 'FAILED' | 'FAILED_INSUFFICIENT_BALANCE' | 'IN_PROGRESS';
 

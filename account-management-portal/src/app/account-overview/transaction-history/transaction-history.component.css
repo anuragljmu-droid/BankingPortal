@@ -1,0 +1,4 @@
+.transaction-list {
+  max-height: 560px;
+  overflow-y: auto;
+}

@@ -1,220 +1,132 @@
-# BankingPortal
+# Banking Portal
 
-Interview assignment for a banking portal with a Spring Boot backend and an Angular frontend.
+This assignment implements a small banking portal with a Spring Boot REST API and an Angular single-page application.
 
-## Assignment Summary
+## Assignment Requirements
 
 Backend requirements:
 
 - Add money to an account.
 - Debit money from an account.
 - Get account balance.
-- Perform currency exchange with fixed exchange rates.
-- Retrieve transaction history for an account.
-- Support users with multiple accounts.
-- Each account has exactly one currency: `EUR`, `USD`, `SEK`, `GBP`, `VND`.
-- Debit operations use the account currency only.
-- Before debiting, call an external page to simulate external logging.
-- Store data in SQL. This project currently uses H2.
+- Perform currency exchange using fixed exchange rates.
+- Retrieve transaction history for a given account.
+- Support a user with multiple accounts.
+- Keep one currency per account. Supported currencies are `EUR`, `USD`, `SEK`, `GBP`, and `VND`.
+- Debit operations must use the account currency only.
+- Before debiting, simulate external logging by calling a configured external URL.
+- Store data in an SQL database. This project uses H2 for local development.
+- Keep the backend service self-contained.
 
-Frontend requirements will be handled later in `account-management-portal`.
+Frontend requirements:
+
+- Show all accounts for the current user.
+- Show balance and currency for each account.
+- Open an account overview page from the account list.
+- Show account balance, currency, transaction history, and balance history chart.
+- Load transaction history in pages and load more transactions without a page reload.
+- Open a transaction overview page from the transaction list.
+- Export a transaction summary as a PDF report.
+
+NgRx is not used. The Angular UI uses local component state and signals.
 
 ## Project Structure
 
 ```text
 .
-├── account-management-api
-└── account-management-portal
+├── account-management-api      # Spring Boot backend
+└── account-management-portal   # Angular frontend
 ```
 
-Current backend package:
+## Backend
 
-```text
-com.banking_portal.account_management_api
-├── account
-├── common
-├── exchange
-├── transaction
-└── user
-```
+The backend is implemented in `account-management-api`.
 
-## Backend Current State
+Technology:
 
-The backend project is `account-management-api`.
+- Java 21
+- Spring Boot
+- Spring Web MVC
+- Spring Data JPA
+- H2 database
+- Maven
 
-Implemented so far:
+The backend runs on port `8081` in the dev profile.
 
-- Spring Boot application setup.
-- JPA entities and repositories.
-- H2 dev database configuration.
-- Dev-profile SQL seed data.
-- JPA auditing for created/updated timestamps.
-- Optimistic locking on accounts.
-- Transaction statuses.
-- Fixed exchange-rate table.
+### Backend Behavior
 
-## Domain Model
+The application currently uses a seeded demo user as the current user. That user has multiple accounts in different currencies.
 
-### User
+Accounts:
 
-Represents a banking customer.
+- Each account belongs to the current demo user.
+- Each account has one fixed currency.
+- Account balances are stored as `BigDecimal`.
+- Account updates use optimistic locking through the account `version` field.
 
-Fields:
+Deposits:
 
-- `id`
-- `firstName`
-- `lastName`
-- `email`
-- `createdAt`
-- `updatedAt`
+- Deposit requests can include a source currency.
+- If the source currency differs from the account currency, the backend converts the amount using the fixed exchange-rate table.
+- A transaction is created and marked as `SUCCESS` when the balance update completes.
 
-Relationships:
+Debits:
 
-- One user can have many accounts.
+- Debit requests must use the same currency as the account.
+- Before the debit is completed, the backend calls the configured external logging URL.
+- If the account does not have enough money, the transaction is marked as failed for insufficient balance.
+- If external logging fails, the transaction is marked as failed.
 
-Auditing:
+Currency exchange:
 
-- `createdAt` uses `@CreatedDate`.
-- `updatedAt` uses `@LastModifiedDate`.
+- Exchanges move money between two accounts owned by the current demo user.
+- The source account is debited in its own currency.
+- The target account is credited after conversion using the fixed exchange rate.
+- The exchange creates paired `EXCHANGE_OUT` and `EXCHANGE_IN` transactions.
 
-### Account
+Transactions:
 
-Represents one bank account with one fixed currency.
+- Transaction history is available per account.
+- Transaction detail is available by transaction ID.
+- Balance history is generated from historical transaction data.
+- Transaction statuses include successful, in-progress, and failed states.
 
-Fields:
+External logging:
 
-- `id`
-- `user`
-- `accountNumber`
-- `currency`
-- `balance`
-- `version`
-- `createdAt`
-- `updatedAt`
+- The external logging URL is configured in application configuration:
 
-Important details:
 
-- `balance` uses `BigDecimal`.
-- `currency` is one of `EUR`, `USD`, `SEK`, `GBP`, `VND`.
-- `version` uses JPA optimistic locking with `@Version`.
-- Optimistic locking protects balance updates from lost concurrent writes.
-
-### Transaction
-
-Represents a balance-affecting operation.
-
-Fields:
-
-- `id`
-- `account`
-- `type`
-- `status`
-- `amount`
-- `currency`
-- `balanceAfter`
-- `accountVersionAfter`
-- `description`
-- `createdAt`
-- `reference`
-- `relatedTransactionId`
-
-Transaction types:
-
-- `DEPOSIT`
-- `DEBIT`
-- `EXCHANGE_IN`
-- `EXCHANGE_OUT`
-
-Transaction statuses:
-
-- `IN_PROGRESS`
-- `SUCCESS`
-- `FAILED`
-
-Lifecycle:
-
-```text
-IN_PROGRESS -> SUCCESS
-IN_PROGRESS -> FAILED
-```
-
-`SUCCESS` and `FAILED` are terminal states by convention. The service layer will enforce this.
-
-`accountVersionAfter` is a snapshot of the account version after the transaction completes. It is not modeled as a foreign key because the JPA account version is not a separate table row.
-
-### ExchangeRate
-
-Stores fixed exchange rates in SQL.
-
-Fields:
-
-- `id`
-- `sourceCurrency`
-- `targetCurrency`
-- `rate`
-- `createdAt`
-- `updatedAt`
-
-The table has a unique constraint on:
-
-```text
-source_currency + target_currency
-```
-
-## Seed Data
-
-Seed data is loaded from:
-
-```text
-account-management-api/src/main/resources/data-dev.sql
-```
-
-It is enabled only through the dev profile configuration in:
-
-```text
-account-management-api/src/main/resources/application-dev.yml
-```
-
-Current seed data includes:
-
-- Demo user with ID `1`.
-- Accounts for `EUR`, `USD`, `SEK`, `GBP`, and `VND`.
-- Sample successful transactions.
-- Fixed exchange rates between supported currencies.
-
-The app currently treats user ID `1` as the demo/current user. Later, this should come from the authentication context after login.
-
-## Planned Backend API
+## Backend API
 
 Accounts:
 
 ```http
 GET /api/accounts
 GET /api/accounts/{accountId}
+GET /api/accounts/{accountId}/balance
 ```
 
-Deposits and debits:
+Deposit and debit:
 
 ```http
-POST /api/accounts/{accountId}?action=deposit
-POST /api/accounts/{accountId}?action=debit
+POST /api/accounts/{accountId}?action=DEPOSIT
+POST /api/accounts/{accountId}?action=DEBIT
 ```
 
-Example deposit body:
+Request body:
 
 ```json
 {
   "amount": 100.00,
   "description": "Salary",
-  "currency": "SEK"
+  "currency": "EUR"
 }
 ```
 
-Transaction history:
+Account transactions:
 
 ```http
-GET /api/accounts/{accountId}/transactions?page=0&size=20
-GET /api/transactions/{transactionId}
+GET /api/accounts/{accountId}/transactions?page=0&size=10&sort=createdAt,desc
 ```
 
 Balance history:
@@ -223,72 +135,131 @@ Balance history:
 GET /api/accounts/{accountId}/balance-history
 ```
 
-Transaction summary:
+Currency exchange:
 
 ```http
+POST /api/exchanges
+```
+
+Request body:
+
+```json
+{
+  "fromAccountId": 1,
+  "toAccountId": 2,
+  "amount": 50.00,
+  "description": "Exchange to USD"
+}
+```
+
+Transactions:
+
+```http
+GET /api/transactions/{transactionId}
 GET /api/transactions/{transactionId}/summary
 ```
 
-## Planned Backend Services
+## Frontend
 
-- `AccountService`
-- `TransactionService`
-- `ExchangeService`
-- `ExchangeRateService`
-- `ExternalLoggingService`
+The frontend is implemented in `account-management-portal`.
 
-Debit flow will call an external logging URL before completing the debit.
+Technology:
 
-Balance-changing flows will:
+- Angular 21
+- Bootstrap 5
+- Angular Router
+- Angular forms
+- Signals/local component state
 
-- create a transaction as `IN_PROGRESS`;
-- update account balance;
-- store `balanceAfter` and `accountVersionAfter`;
-- mark the transaction as `SUCCESS`;
-- mark the transaction as `FAILED` if the operation cannot complete.
+The frontend runs on port `4200` during local development.
 
-Account updates should retry a small number of times when optimistic locking detects a concurrent modification.
+### UI Behavior
 
-## Run Backend
+Home page:
 
-From the backend folder:
+- Lists all accounts for the current demo user.
+- Shows account number, balance, and currency.
+- Opens the account overview page when an account is selected.
+
+Account overview page:
+
+- Shows the selected account number, balance, and currency.
+- Shows a balance history line chart.
+- Provides account actions for deposit, debit, and currency exchange.
+- Shows paginated transaction history.
+- Loads more transactions dynamically using an infinite-scroll trigger and a manual load-more button.
+- Opens the transaction overview page when a transaction is selected.
+
+Transaction overview page:
+
+- Shows transaction reference, date, status, type, amount, balance after transaction, account ID, description, and related transaction ID.
+- Provides a button to download a PDF transaction summary.
+
+The account overview UI is split into smaller components:
+
+```text
+account-overview
+├── account-actions
+└── transaction-history
+```
+
+### Frontend API Proxy
+
+The Angular dev server proxies API calls to the backend:
+
+```json
+{
+  "/api": {
+    "target": "http://localhost:8081",
+    "secure": false,
+    "changeOrigin": true
+  }
+}
+```
+
+This lets the UI call `/api/...` while the backend runs on `localhost:8081`.
+
+## Running Locally
+
+Start the backend:
 
 ```bash
 cd account-management-api
 ./mvnw spring-boot:run
 ```
 
-The dev server runs on:
+Start the frontend:
+
+```bash
+cd account-management-portal
+npm install
+npm start
+```
+
+Open the UI:
+
+```text
+http://localhost:4200
+```
+
+Backend base URL:
 
 ```text
 http://localhost:8081
 ```
 
-H2 console:
+## Verification
 
-```text
-http://localhost:8081/h2-console
-```
-
-Dev JDBC URL:
-
-```text
-jdbc:h2:mem:testdb
-```
-
-## Run Tests
-
-From the backend folder:
+Backend tests:
 
 ```bash
 cd account-management-api
 ./mvnw test
 ```
 
-Current verification:
+Frontend build/check:
 
-```text
-./mvnw clean test
+```bash
+cd account-management-portal
+npm run build
 ```
-
-passes successfully.

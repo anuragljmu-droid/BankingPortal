@@ -1,0 +1,40 @@
+<section class="panel">
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <h2 class="h5 mb-0">Transaction history</h2>
+    <span class="text-secondary small">{{ transactions.length }} loaded</span>
+  </div>
+
+  @if (!transactions.length && isLoadingMore) {
+    <div class="alert alert-info">Loading transactions...</div>
+  } @else if (!transactions.length) {
+    <div class="empty-state">No transactions yet.</div>
+  } @else {
+    <div class="list-group transaction-list">
+      @for (transaction of transactions; track transaction.id) {
+        <a class="list-group-item list-group-item-action" [routerLink]="['/transactions', transaction.id]">
+          <div class="d-flex flex-wrap justify-content-between gap-2">
+            <div>
+              <div class="fw-semibold">{{ transactionLabel(transaction.type) }}</div>
+              <div class="text-secondary small">{{ dateTime(transaction.createdAt) }}</div>
+              @if (transaction.description) {
+                <div class="text-secondary small">{{ transaction.description }}</div>
+              }
+            </div>
+            <div class="text-end">
+              <div class="fw-semibold">{{ money(transaction.amount, transaction.currency) }}</div>
+              <div class="text-secondary small">Balance {{ money(transaction.balanceAfter, transaction.currency) }}</div>
+            </div>
+          </div>
+        </a>
+      }
+    </div>
+
+    @if (hasMore) {
+      <div #loadMoreAnchor class="py-3 text-center">
+        <button class="btn btn-outline-secondary" type="button" (click)="loadMore.emit()" [disabled]="isLoadingMore">
+          {{ isLoadingMore ? 'Loading...' : 'Load more' }}
+        </button>
+      </div>
+    }
+  }
+</section>

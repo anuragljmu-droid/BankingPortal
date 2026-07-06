@@ -1,5 +1,4 @@
-import { Component, ElementRef, OnDestroy, OnInit, ViewChild, computed, signal } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { Component, OnInit, computed, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import {
@@ -9,15 +8,17 @@ import {
   Transaction,
 } from '../shared/bank.models';
 import { BankApiService } from '../shared/bank-api.service';
-import { dateTime, money, transactionLabel } from '../shared/formatters';
+import { money } from '../shared/formatters';
+import { AccountActionsComponent, ExchangeForm, MoneyMovementForm } from './account-actions/account-actions.component';
+import { TransactionHistoryComponent } from './transaction-history/transaction-history.component';
 
 @Component({
   selector: 'app-account-overview',
-  imports: [FormsModule, RouterLink],
+  imports: [AccountActionsComponent, RouterLink, TransactionHistoryComponent],
   templateUrl: './account-overview.component.html',
   styleUrl: './account-overview.component.css',
 })
-export class AccountOverviewComponent implements OnInit, OnDestroy {
+export class AccountOverviewComponent implements OnInit {
   readonly account = signal<Account | null>(null);
   readonly accounts = signal<Account[]>([]);
   readonly transactions = signal<Transaction[]>([]);
@@ -30,20 +31,10 @@ export class AccountOverviewComponent implements OnInit, OnDestroy {
   readonly hasMore = signal(true);
 
   readonly money = money;
-  readonly dateTime = dateTime;
-  readonly transactionLabel = transactionLabel;
-
-  movementAction: 'deposit' | 'debit' = 'deposit';
-  movementAmount = 25;
-  movementDescription = '';
-  exchangeToAccountId: number | null = null;
-  exchangeAmount = 10;
-  exchangeDescription = '';
 
   private accountId = 0;
   private page = 0;
   private readonly pageSize = 10;
-  private observer: IntersectionObserver | null = null;
 
   readonly chartPolyline = computed(() => {
     const points = this.history()
@@ -89,21 +80,6 @@ export class AccountOverviewComponent implements OnInit, OnDestroy {
     return account && balances.length ? money(Math.max(...balances), account.currency) : '';
   });
 
-  @ViewChild('loadMoreAnchor')
-  set loadMoreAnchor(anchor: ElementRef<HTMLElement> | undefined) {
-    this.observer?.disconnect();
-    if (!anchor || typeof IntersectionObserver === 'undefined') {
-      return;
-    }
-
-    this.observer = new IntersectionObserver((entries) => {
-      if (entries.some((entry) => entry.isIntersecting)) {
-        this.loadMoreTransactions();
-      }
-    });
-    this.observer.observe(anchor.nativeElement);
-  }
-
   constructor(
     private readonly route: ActivatedRoute,
     private readonly bankApi: BankApiService,
@@ -112,10 +88,6 @@ export class AccountOverviewComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.accountId = Number(this.route.snapshot.paramMap.get('accountId'));
     this.loadAccountScreen();
-  }
-
-  ngOnDestroy(): void {
-    this.observer?.disconnect();
   }
 
   loadMoreTransactions(): void {
@@ -138,7 +110,7 @@ export class AccountOverviewComponent implements OnInit, OnDestroy {
     });
   }
 
-  submitMovement(): void {
+  submitMovement(form: MoneyMovementForm): void {
     const account = this.account();
     if (!account) {
       return;
@@ -147,9 +119,9 @@ export class AccountOverviewComponent implements OnInit, OnDestroy {
     this.isSubmitting.set(true);
     this.clearMessages();
     this.bankApi
-      .moveMoney(account.id, this.movementAction, {
-        amount: this.movementAmount,
-        description: this.movementDescription || `${this.movementAction} from portal`,
+      .moveMoney(account.id, form.action, {
+        amount: form.amount,
+        description: form.description || `${form.action} from portal`,
         currency: account.currency as CurrencyCode,
       })
       .subscribe({
@@ -164,9 +136,9 @@ export class AccountOverviewComponent implements OnInit, OnDestroy {
       });
   }
 
-  submitExchange(): void {
+  submitExchange(form: ExchangeForm): void {
     const account = this.account();
-    if (!account || !this.exchangeToAccountId) {
+    if (!account) {
       return;
     }
 
@@ -175,9 +147,9 @@ export class AccountOverviewComponent implements OnInit, OnDestroy {
     this.bankApi
       .performExchange({
         fromAccountId: account.id,
-        toAccountId: this.exchangeToAccountId,
-        amount: this.exchangeAmount,
-        description: this.exchangeDescription || 'Exchange from portal',
+        toAccountId: form.toAccountId,
+        amount: form.amount,
+        description: form.description || 'Exchange from portal',
       })
       .subscribe({
         next: () => {
@@ -203,7 +175,6 @@ export class AccountOverviewComponent implements OnInit, OnDestroy {
         this.account.set(account);
         this.accounts.set(accounts);
         this.history.set(history);
-        this.exchangeToAccountId = accounts.find((item) => item.id !== account.id)?.id ?? null;
         this.transactions.set([]);
         this.page = 0;
         this.hasMore.set(true);

@@ -4,6 +4,7 @@ import {
   Account,
   BalanceHistoryPoint,
   ExchangeRequest,
+  MoneyMovementAction,
   MoneyMovementRequest,
   Page,
   Transaction,
@@ -23,7 +24,7 @@ export class BankApiService {
     return this.http.get<Account>(`${this.baseUrl}/accounts/${accountId}`);
   }
 
-  moveMoney(accountId: number, action: 'deposit' | 'debit', request: MoneyMovementRequest) {
+  moveMoney(accountId: number, action: MoneyMovementAction, request: MoneyMovementRequest) {
     return this.http.post<Transaction>(`${this.baseUrl}/accounts/${accountId}`, request, {
       params: { action },
     });

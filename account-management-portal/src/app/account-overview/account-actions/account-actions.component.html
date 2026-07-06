@@ -1,0 +1,85 @@
+<section class="panel h-100">
+  <h2 class="h5 mb-3">Account actions</h2>
+
+  <form class="row g-2 mb-4" (ngSubmit)="submitMovement()">
+    <div class="col-12 col-sm-4">
+      <label class="form-label" for="movementAction">Action</label>
+      <select id="movementAction" class="form-select" name="movementAction" [(ngModel)]="movementAction">
+        <option value="DEPOSIT">Deposit</option>
+        <option value="DEBIT">Debit</option>
+      </select>
+    </div>
+    <div class="col-12 col-sm-4">
+      <label class="form-label" for="movementAmount">Amount</label>
+      <input
+        id="movementAmount"
+        class="form-control"
+        type="number"
+        min="0.01"
+        step="0.01"
+        name="movementAmount"
+        [(ngModel)]="movementAmount"
+        required
+      />
+    </div>
+    <div class="col-12 col-sm-4 d-flex align-items-end">
+      <button class="btn btn-primary w-100" type="submit" [disabled]="isSubmitting">Submit</button>
+    </div>
+    <div class="col-12">
+      <label class="form-label" for="movementDescription">Description</label>
+      <input
+        id="movementDescription"
+        class="form-control"
+        name="movementDescription"
+        [(ngModel)]="movementDescription"
+        placeholder="Optional"
+      />
+    </div>
+  </form>
+
+  <form class="row g-2" (ngSubmit)="submitExchange()">
+    <div class="col-12 col-sm-5">
+      <label class="form-label" for="exchangeTo">Exchange to</label>
+      <select
+        id="exchangeTo"
+        class="form-select"
+        name="exchangeToAccountId"
+        [(ngModel)]="exchangeToAccountId"
+      >
+        @for (target of accounts; track target.id) {
+          @if (target.id !== account.id) {
+            <option [ngValue]="target.id">{{ target.accountNumber }} ({{ target.currency }})</option>
+          }
+        }
+      </select>
+    </div>
+    <div class="col-12 col-sm-4">
+      <label class="form-label" for="exchangeAmount">Amount</label>
+      <input
+        id="exchangeAmount"
+        class="form-control"
+        type="number"
+        min="0.01"
+        step="0.01"
+        name="exchangeAmount"
+        [(ngModel)]="exchangeAmount"
+        required
+      />
+    </div>
+    <div class="col-12 col-sm-3 d-flex align-items-end">
+      <button class="btn btn-outline-primary w-100" type="submit" [disabled]="isSubmitting || !defaultExchangeTarget()">
+        Exchange
+      </button>
+    </div>
+    <div class="col-12">
+      <label class="form-label" for="exchangeDescription">Description</label>
+      <input
+        id="exchangeDescription"
+        class="form-control"
+        name="exchangeDescription"
+        [(ngModel)]="exchangeDescription"
+        placeholder="Optional"
+      />
+    </div>
+  </form>
+</section>
